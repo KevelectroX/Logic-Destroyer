@@ -1,0 +1,4 @@
+module semi_sum(
+	input wire a, b,
+	output s, c_out
+);

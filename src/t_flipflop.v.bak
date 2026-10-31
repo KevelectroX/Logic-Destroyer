@@ -1,0 +1,5 @@
+module t_fliplop(
+	input wire t, q, rise,
+	output wire q_next
+	
+)
