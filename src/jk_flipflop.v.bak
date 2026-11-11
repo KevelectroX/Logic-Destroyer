@@ -1,5 +1,0 @@
-module jk(
-	input wire a, b, q, rise;
-	output wire q_next;
-)
-
