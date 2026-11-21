@@ -1,22 +1,13 @@
-module block_2input #(parameter SEED)
-
+module block_2input
 (
-	input wire i1, i2, rise, clk, enable, //enable en 0 apaga el LFSR
-	input wire [3:0] circuit,
-	output reg o, q
+	input wire i1, i2, rise, q, 
+	input wire [2:0] circuit,
+	output reg o
 );
 
 	wire o1, o2, o3, o4, o5, o6, o7, o8;
 	
-	wire [3:0] q_temp;
 	
-	LFSR #(.NUM_BITS(4), .DEFAULT_VALUE(SEED)) random(
-		.i_Clk(clk),
-		.i_Enable(enable),
-		.i_Seed_DV(1'b0),
-		.i_Seed_Data(4'd0),
-		.o_LFSR_Data(q_temp)
-	);
 	
 	and_gate block_1(
 				.a(i1),
@@ -68,7 +59,7 @@ module block_2input #(parameter SEED)
 	jk_flipflop block_8(
 				.j(i1),
 				.k(i2),
-				.q(q_temp[0]),
+				.q(q),
 				.rise(rise),
 				.q_next(o8)
 				);
@@ -76,8 +67,6 @@ module block_2input #(parameter SEED)
 
 	always @(*) 
 	begin
-
-		q = 0;
 
 		case (circuit)
 		
@@ -95,11 +84,7 @@ module block_2input #(parameter SEED)
 			
 			4'd6 : o = o7;
 			
-			4'd7 : 
-			begin
-				o = o8;
-				q = q_temp[0];
-			end
+			4'd7 : o = o8;
 
 			default : o = 0;
 				

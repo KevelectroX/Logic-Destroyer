@@ -14,7 +14,7 @@ module UART_RX
 
 	parameter IDLE = 3'b000;
 	parameter RX_START_BIT = 3'b001;
-	parameter RX_DATA	_BITS = 3'b010;
+	parameter RX_DATA_BITS = 3'b010;
 	parameter RX_STOP_BIT = 3'b011;
 	parameter CLEANUP = 3'b100;
 

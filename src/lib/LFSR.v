@@ -13,7 +13,7 @@ module LFSR #(parameter NUM_BITS,
    );
  
   reg [NUM_BITS:1] r_LFSR = DEFAULT_VALUE;
-  reg              r_XNOR;
+  reg              r_XNOR = 0;
  
  
   // Purpose: Load up LFSR with Seed if Data Valid (DV) pulse is detected.
