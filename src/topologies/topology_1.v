@@ -1,5 +1,5 @@
 module topology_1(
-    input wire i1, i2, i3, rise, q_0, q_1
+    input wire i1, i2, i3, rise, q_0, q_1,
     input [2:0] circuit1, circuit2,
     output wire o1
 );

@@ -70,21 +70,21 @@ module block_2input
 
 		case (circuit)
 		
-			4'd0 : o = o1;
+			3'd0 : o = o1;
 			
-			4'd1 : o = o2;
+			3'd1 : o = o2;
 			
-			4'd2 : o = o3;
+			3'd2 : o = o3;
 			
-			4'd3 : o = o4;
+			3'd3 : o = o4;
 			
-			4'd4 : o = o5;
+			3'd4 : o = o5;
 			
-			4'd5 : o = o6;
+			3'd5 : o = o6;
 			
-			4'd6 : o = o7;
+			3'd6 : o = o7;
 			
-			4'd7 : o = o8;
+			3'd7 : o = o8;
 
 			default : o = 0;
 				

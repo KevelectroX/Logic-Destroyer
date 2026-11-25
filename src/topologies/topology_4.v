@@ -26,7 +26,7 @@ module topology_4(
         .i2(i3),
         .rise(rise),
         .q(random_config[12]),
-        .circuit({1'b0, random_config[11:9]}),
+        .circuit(random_config[11:9]),
         .o(w_g2)
     );
 
@@ -35,7 +35,7 @@ module topology_4(
         .i2(i5),
         .rise(rise),
         .q(random_config[16]),
-        .circuit({1'b0, random_config[15:13]}),
+        .circuit(random_config[15:13]),
         .o(w_g3)
     );
 
@@ -44,7 +44,7 @@ module topology_4(
         .i2(w_g2),
         .rise(rise),
         .q(random_config[20]),
-        .circuit({1'b0, random_config[19:17]}),
+        .circuit(random_config[19:17]),
         .o(w_g4)
     );
 
@@ -61,7 +61,7 @@ module topology_4(
         .i2(w_g3),
         .rise(rise),
         .q(random_config[27]),
-        .circuit({1'b0, random_config[26:24]}),
+        .circuit(random_config[26:24]),
         .o(o2)
     );
 

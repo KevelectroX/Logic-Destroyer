@@ -16,7 +16,7 @@ module topology_2(
         .i2(i2),
         .rise(rise),
         .q(random_config[7]),
-        .circuit({1'b0, random_config[6:4]}),
+        .circuit(random_config[6:4]),
         .o(w_g1)
     );
 
@@ -33,7 +33,7 @@ module topology_2(
         .i2(w_g2),
         .rise(rise),
         .q(random_config[14]),
-        .circuit({1'b0, random_config[13:11]}),
+        .circuit(random_config[13:11]),
         .o(o1)
     );
 

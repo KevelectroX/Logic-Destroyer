@@ -1,4 +1,5 @@
 module topology_5_draw(
+    input clk,
     input [31:0] random_config, 
     input [3:0] inputs,
     input [2:0] pos,    
@@ -15,6 +16,10 @@ module topology_5_draw(
     localparam LINE = 2'd2; 
     localparam ONE = 7'd64;
     localparam ZERO = 7'd63;            
+    localparam Q_LEFT = 7'd117;     // "Q" y la mitad izquierda del "="
+    localparam Q_0 = 7'd118;        // Mitad derecha del "=" y el 0 (119 con el 1)
+    localparam RISE  = 4'd12;       // Flanco de bajada (13 el de subida)
+    localparam CLK = 7'd116;        // Texto "CLK" en un solo glifo
 
     // Tiles de línea
     localparam LINE_H = 4'd0;
@@ -27,13 +32,37 @@ module topology_5_draw(
     localparam TEE_U = 4'd8;
     localparam TEE_L = 4'd10;
 
+    // Tiles de media altura: el cable va entre dos celdas, a la altura de la salida centrada
+    localparam HALF = 2'd3;
+    localparam HLINE_TOP = 4'd0;
+    localparam HLINE_BOT = 4'd1;
+    localparam HSTUB_L_BOT = 4'd3;
+    localparam HCORNER_LU = 4'd4;
+    localparam HSTUB_R_TOP = 4'd6;
+    localparam HCORNER_RD = 4'd7;
+    localparam HSTEP_UP = 4'd8;
+    localparam HCROSS_TOP = 4'd10;
+    localparam HCROSS_BOT = 4'd11;
+    localparam HTEE_L_TOP = 4'd14;
+    localparam HTEE_L_BOT = 4'd15;
+
     // Colores {azul, verde, rojo}
     localparam WHITE  = 3'b111;
     localparam YELLOW = 3'b011;     
     localparam GREEN  = 3'b010;     
     localparam RED    = 3'b001;     
+    localparam CYAN   = 3'b110;     // Reloj
+
+    localparam SEMI_HALF_SECOND = 50_000_000 / 4; // Valor de agonización
+
+
+    // Variables Agonizantes
+    reg twinkle = 0;
+    reg [23:0] counter = 0;
 
     
+    wire rise = random_config[5];
+
     wire [3:0] tile_g1 = {1'b0, random_config[8:6]};
     wire [3:0] tile_g2 = {2'b10, random_config[11:10]};
     wire [3:0] tile_g3 = {1'b0, random_config[15:13]};
@@ -41,6 +70,14 @@ module topology_5_draw(
     wire [3:0] tile_g5 = {1'b0, random_config[23:21]};
     wire [3:0] tile_g6 = {2'b10, random_config[26:25]};
     wire [3:0] tile_g7 = {1'b0, random_config[30:28]};
+
+    wire g1_flipflop = (random_config[8:6] == 3'd7);
+    wire g2_flipflop = (random_config[11:10] >= 2'd2);     // D o T
+    wire g3_flipflop = (random_config[15:13] == 3'd7);
+    wire g4_flipflop = (random_config[19:17] == 3'd7);
+    wire g5_flipflop = (random_config[23:21] == 3'd7);
+    wire g6_flipflop = (random_config[26:25] >= 2'd2);     // D o T
+    wire g7_flipflop = (random_config[30:28] == 3'd7);
 
     
     wire [2:0] c_i1 = random_config[0] ? GREEN : RED;
@@ -79,38 +116,22 @@ module topology_5_draw(
         if(lx == 14 && ly == 9) item = {LINE, LINE_V, YELLOW};
         if(lx == 25 && ly >= 9 && ly <= 11) item = {LINE, LINE_V, YELLOW};
         if(lx >= 6 && lx <= 9 && ly == 10) item = {LINE, LINE_H, c_i1};
-        if(lx >= 12 && lx <= 13 && ly == 10) item = {LINE, LINE_H, YELLOW};
-        if(lx == 14 && ly == 10) item = {LINE, TEE_L, YELLOW};
         if(lx >= 6 && lx <= 9 && ly == 11) item = {LINE, LINE_H, c_i2};
-        if(lx == 14 && ly == 11) item = {LINE, LINE_V, YELLOW};
         if(lx == 14 && ly == 12) item = {LINE, CORNER_RU, YELLOW};
         if(lx >= 15 && lx <= 19 && ly == 12) item = {LINE, LINE_H, YELLOW};
-        if(lx >= 22 && lx <= 24 && ly == 12) item = {LINE, LINE_H, c_o1};
-        if(lx == 25 && ly == 12) item = {LINE, CROSS, c_o1};
-        if(lx >= 26 && lx <= 31 && ly == 12) item = {LINE, LINE_H, c_o1};
         if(lx == 16 && ly == 13) item = {LINE, CORNER_RD, YELLOW};
         if(lx >= 17 && lx <= 19 && ly == 13) item = {LINE, LINE_H, YELLOW};
-        if(lx == 25 && ly >= 13 && ly <= 15) item = {LINE, LINE_V, YELLOW};
+        if(lx == 25 && ly >= 14 && ly <= 15) item = {LINE, LINE_V, YELLOW};
         if(lx == 16 && ly >= 14 && ly <= 15) item = {LINE, LINE_V, YELLOW};
-        if(lx >= 6 && lx <= 9 && ly == 16) item = {LINE, LINE_H, c_i3};
-        if(lx >= 12 && lx <= 15 && ly == 16) item = {LINE, LINE_H, YELLOW};
-        if(lx == 16 && ly == 16) item = {LINE, TEE_L, YELLOW};
-        if(lx == 18 && ly == 16) item = {LINE, CORNER_RD, YELLOW};
-        if(lx >= 19 && lx <= 24 && ly == 16) item = {LINE, LINE_H, YELLOW};
-        if(lx == 25 && ly == 16) item = {LINE, CROSS, YELLOW};
-        if(lx >= 26 && lx <= 27 && ly == 16) item = {LINE, LINE_H, YELLOW};
-        if(lx >= 30 && lx <= 33 && ly == 16) item = {LINE, LINE_H, c_o2};
-        if(lx == 16 && ly >= 17 && ly <= 19) item = {LINE, LINE_V, YELLOW};
-        if(lx == 18 && ly >= 17 && ly <= 19) item = {LINE, LINE_V, YELLOW};
-        if(lx == 25 && ly >= 17 && ly <= 19) item = {LINE, LINE_V, YELLOW};
+        if(lx == 16 && ly >= 18 && ly <= 19) item = {LINE, LINE_V, YELLOW};
+        if(lx == 18 && ly >= 18 && ly <= 19) item = {LINE, LINE_V, YELLOW};
+        if(lx == 25 && ly >= 18 && ly <= 19) item = {LINE, LINE_V, YELLOW};
         if(lx == 16 && ly == 20) item = {LINE, CORNER_RU, YELLOW};
         if(lx == 17 && ly == 20) item = {LINE, LINE_H, YELLOW};
         if(lx == 18 && ly == 20) item = {LINE, CROSS, YELLOW};
         if(lx == 19 && ly == 20) item = {LINE, LINE_H, YELLOW};
-        if(lx >= 22 && lx <= 24 && ly == 20) item = {LINE, LINE_H, YELLOW};
         if(lx == 25 && ly == 20) item = {LINE, CROSS, YELLOW};
         if(lx >= 26 && lx <= 27 && ly == 20) item = {LINE, LINE_H, YELLOW};
-        if(lx >= 30 && lx <= 33 && ly == 20) item = {LINE, LINE_H, c_o3};
         if(lx == 14 && ly == 21) item = {LINE, CORNER_RD, YELLOW};
         if(lx >= 15 && lx <= 17 && ly == 21) item = {LINE, LINE_H, YELLOW};
         if(lx == 18 && ly == 21) item = {LINE, TEE_U, YELLOW};
@@ -118,14 +139,193 @@ module topology_5_draw(
         if(lx == 25 && ly == 21) item = {LINE, CORNER_RU, YELLOW};
         if(lx >= 26 && lx <= 27 && ly == 21) item = {LINE, LINE_H, YELLOW};
         if(lx >= 6 && lx <= 9 && ly == 22) item = {LINE, LINE_H, c_i4};
-        if(lx >= 12 && lx <= 13 && ly == 22) item = {LINE, LINE_H, YELLOW};
-        if(lx == 14 && ly == 22) item = {LINE, CORNER_LU, YELLOW};
         if(lx >= 6 && lx <= 9 && ly == 23) item = {LINE, LINE_H, c_i5};
 
+        // Salida de la compuerta 1: arriba si es flip-flop, centrada si no (con la bifurcación)
+        if(g1_flipflop)
+        begin
+            if(lx >= 12 && lx <= 13 && ly == 10) item = {LINE, LINE_H, YELLOW};
+            if(lx == 14 && ly == 10) item = {LINE, TEE_L, YELLOW};
+            if(lx == 14 && ly == 11) item = {LINE, LINE_V, YELLOW};
+        end
+        else
+        begin
+            if(lx >= 12 && lx <= 13 && ly == 10) item = {HALF, HLINE_TOP, YELLOW};
+            if(lx >= 12 && lx <= 13 && ly == 11) item = {HALF, HLINE_BOT, YELLOW};
+            if(lx == 14 && ly == 10) item = {HALF, HTEE_L_TOP, YELLOW};
+            if(lx == 14 && ly == 11) item = {HALF, HTEE_L_BOT, YELLOW};
+        end
+
+        // Entrada de la compuerta 2: arriba si es flip-flop, centrada si no
+        if(g2_flipflop)
+        begin
+            if(lx >= 6 && lx <= 9 && ly == 16) item = {LINE, LINE_H, c_i3};
+        end
+        else
+        begin
+            if(lx >= 6 && lx <= 9 && ly == 16) item = {HALF, HLINE_TOP, c_i3};
+            if(lx >= 6 && lx <= 9 && ly == 17) item = {HALF, HLINE_BOT, c_i3};
+        end
+
+        // Salida de la compuerta 2: arriba si es flip-flop, centrada si no (con la bifurcación)
+        if(g2_flipflop)
+        begin
+            if(lx >= 12 && lx <= 15 && ly == 16) item = {LINE, LINE_H, YELLOW};
+            if(lx == 16 && ly == 16) item = {LINE, TEE_L, YELLOW};
+            if(lx == 16 && ly == 17) item = {LINE, LINE_V, YELLOW};
+        end
+        else
+        begin
+            if(lx >= 12 && lx <= 15 && ly == 16) item = {HALF, HLINE_TOP, YELLOW};
+            if(lx >= 12 && lx <= 15 && ly == 17) item = {HALF, HLINE_BOT, YELLOW};
+            if(lx == 16 && ly == 16) item = {HALF, HTEE_L_TOP, YELLOW};
+            if(lx == 16 && ly == 17) item = {HALF, HTEE_L_BOT, YELLOW};
+        end
+
+        // Salida de la compuerta 3: arriba si es flip-flop, centrada si no
+        if(g3_flipflop)
+        begin
+            if(lx >= 12 && lx <= 13 && ly == 22) item = {LINE, LINE_H, YELLOW};
+            if(lx == 14 && ly == 22) item = {LINE, CORNER_LU, YELLOW};
+        end
+        else
+        begin
+            if(lx >= 12 && lx <= 13 && ly == 22) item = {HALF, HLINE_TOP, YELLOW};
+            if(lx >= 12 && lx <= 13 && ly == 23) item = {HALF, HLINE_BOT, YELLOW};
+            if(lx == 14 && ly == 22) item = {HALF, HCORNER_LU, YELLOW};
+            if(lx == 14 && ly == 23) item = {HALF, HSTUB_L_BOT, YELLOW};
+        end
+
+        // Salida de la compuerta 4: arriba si es flip-flop, centrada si no (cruza la vertical)
+        if(g4_flipflop)
+        begin
+            if(lx >= 22 && lx <= 24 && ly == 12) item = {LINE, LINE_H, c_o1};
+            if(lx == 25 && ly == 12) item = {LINE, CROSS, c_o1};
+            if(lx == 25 && ly == 13) item = {LINE, LINE_V, YELLOW};
+            if(lx >= 26 && lx <= 31 && ly == 12) item = {LINE, LINE_H, c_o1};
+        end
+        else
+        begin
+            if(lx >= 22 && lx <= 24 && ly == 12) item = {HALF, HLINE_TOP, c_o1};
+            if(lx >= 22 && lx <= 24 && ly == 13) item = {HALF, HLINE_BOT, c_o1};
+            if(lx == 25 && ly == 12) item = {HALF, HCROSS_TOP, c_o1};
+            if(lx == 25 && ly == 13) item = {HALF, HCROSS_BOT, c_o1};
+            if(lx >= 26 && lx <= 31 && ly == 12) item = {HALF, HLINE_TOP, c_o1};
+            if(lx >= 26 && lx <= 31 && ly == 13) item = {HALF, HLINE_BOT, c_o1};
+        end
+
+        // Salida de la compuerta 5: arriba si es flip-flop, centrada si no
+        if(g5_flipflop)
+        begin
+            if(lx >= 22 && lx <= 24 && ly == 20) item = {LINE, LINE_H, YELLOW};
+        end
+        else
+        begin
+            if(lx == 22 && ly == 20) item = {HALF, HLINE_TOP, YELLOW};
+            if(lx == 22 && ly == 21) item = {HALF, HLINE_BOT, YELLOW};
+            if(lx == 23 && ly == 20) item = {HALF, HSTEP_UP, YELLOW};
+            if(lx == 23 && ly == 21) item = {HALF, HSTUB_L_BOT, YELLOW};
+            if(lx == 24 && ly == 20) item = {LINE, LINE_H, YELLOW};
+        end
+
+        // Entrada de la compuerta 6: arriba si es flip-flop, centrada si no (cruza la vertical)
+        if(g6_flipflop)
+        begin
+            if(lx == 18 && ly == 16) item = {LINE, CORNER_RD, YELLOW};
+            if(lx == 18 && ly == 17) item = {LINE, LINE_V, YELLOW};
+            if(lx >= 19 && lx <= 24 && ly == 16) item = {LINE, LINE_H, YELLOW};
+            if(lx == 25 && ly == 16) item = {LINE, CROSS, YELLOW};
+            if(lx == 25 && ly == 17) item = {LINE, LINE_V, YELLOW};
+            if(lx >= 26 && lx <= 27 && ly == 16) item = {LINE, LINE_H, YELLOW};
+        end
+        else
+        begin
+            if(lx == 18 && ly == 16) item = {HALF, HSTUB_R_TOP, YELLOW};
+            if(lx == 18 && ly == 17) item = {HALF, HCORNER_RD, YELLOW};
+            if(lx >= 19 && lx <= 24 && ly == 16) item = {HALF, HLINE_TOP, YELLOW};
+            if(lx >= 19 && lx <= 24 && ly == 17) item = {HALF, HLINE_BOT, YELLOW};
+            if(lx == 25 && ly == 16) item = {HALF, HCROSS_TOP, YELLOW};
+            if(lx == 25 && ly == 17) item = {HALF, HCROSS_BOT, YELLOW};
+            if(lx >= 26 && lx <= 27 && ly == 16) item = {HALF, HLINE_TOP, YELLOW};
+            if(lx >= 26 && lx <= 27 && ly == 17) item = {HALF, HLINE_BOT, YELLOW};
+        end
+
+        // Salida de la compuerta 6: arriba si es flip-flop, centrada si no
+        if(g6_flipflop)
+        begin
+            if(lx >= 30 && lx <= 33 && ly == 16) item = {LINE, LINE_H, c_o2};
+        end
+        else
+        begin
+            if(lx >= 30 && lx <= 33 && ly == 16) item = {HALF, HLINE_TOP, c_o2};
+            if(lx >= 30 && lx <= 33 && ly == 17) item = {HALF, HLINE_BOT, c_o2};
+        end
+
+        // Salida de la compuerta 7: arriba si es flip-flop, centrada si no
+        if(g7_flipflop)
+        begin
+            if(lx >= 30 && lx <= 33 && ly == 20) item = {LINE, LINE_H, c_o3};
+        end
+        else
+        begin
+            if(lx >= 30 && lx <= 33 && ly == 20) item = {HALF, HLINE_TOP, c_o3};
+            if(lx >= 30 && lx <= 33 && ly == 21) item = {HALF, HLINE_BOT, c_o3};
+        end
+
+        // Memoria
+        if(lx == 10 && ly == 12 && g1_flipflop) text = {1'b0, Q_LEFT, WHITE};
+        if(lx == 11 && ly == 12 && g1_flipflop) text = {1'b0, Q_0 + random_config[9], WHITE};
+        if(lx == 10 && ly == 18 && g2_flipflop) text = {1'b0, Q_LEFT, WHITE};
+        if(lx == 11 && ly == 18 && g2_flipflop) text = {1'b0, Q_0 + random_config[12], WHITE};
+        if(lx == 10 && ly == 24 && g3_flipflop) text = {1'b0, Q_LEFT, WHITE};
+        if(lx == 11 && ly == 24 && g3_flipflop) text = {1'b0, Q_0 + random_config[16], WHITE};
+        if(lx == 20 && ly == 14 && g4_flipflop) text = {1'b0, Q_LEFT, WHITE};
+        if(lx == 21 && ly == 14 && g4_flipflop) text = {1'b0, Q_0 + random_config[20], WHITE};
+        if(lx == 20 && ly == 22 && g5_flipflop) text = {1'b0, Q_LEFT, WHITE};
+        if(lx == 21 && ly == 22 && g5_flipflop) text = {1'b0, Q_0 + random_config[24], WHITE};
+        if(lx == 28 && ly == 18 && g6_flipflop) text = {1'b0, Q_LEFT, WHITE};
+        if(lx == 29 && ly == 18 && g6_flipflop) text = {1'b0, Q_0 + random_config[27], WHITE};
+        if(lx == 28 && ly == 22 && g7_flipflop) text = {1'b0, Q_LEFT, WHITE};
+        if(lx == 29 && ly == 22 && g7_flipflop) text = {1'b0, Q_0 + random_config[31], WHITE};
+
         // Entradas
-        if(gx == 17 && gy == 6 && pos > 0) text = {1'b1, (inputs[0]) ? ONE : ZERO, WHITE};
-        if(gx == 17 && gy == 8 && pos > 1) text = {1'b1, (inputs[1]) ? ONE : ZERO, WHITE};
-        if(gx == 17 && gy == 10 && pos > 2) text = {1'b1, (inputs[2]) ? ONE : ZERO, WHITE};
+        if(gx == 17 && gy == 6 && pos > 0) 
+        begin
+
+            if(~inputs[0] == o1 && twinkle && show_response) text = {1'b1, (inputs[0]) ? ONE : ZERO, WHITE};
+            else if(~show_response || inputs[0] == o1) text = {1'b1, (inputs[0]) ? ONE : ZERO, WHITE};
+
+        end
+        if(gx == 17 && gy == 8 && pos > 1)
+        begin
+
+            if(~inputs[1] == o2 && twinkle && show_response) text = {1'b1, (inputs[1]) ? ONE : ZERO, WHITE};
+            else if(~show_response || inputs[1] == o2) text = {1'b1, (inputs[1]) ? ONE : ZERO, WHITE};
+
+        end
+
+        if(gx == 17 && gy == 10 && pos > 2)
+        begin
+
+            if(~inputs[2] == o3 && twinkle && show_response) text = {1'b1, (inputs[2]) ? ONE : ZERO, WHITE};
+            else if(~show_response || inputs[2] == o3) text = {1'b1, (inputs[2]) ? ONE : ZERO, WHITE};
+
+        end
+
+        // Flanco
+        if(gx == 17 && gy == 2) item = {GATE, RISE + rise, CYAN};
+        if(gx == 16 && gy == 2) text = {1'b1, CLK, WHITE};
+    end
+
+    always @(posedge clk)
+    begin
+        counter <= counter + 1;
+
+        if (counter == SEMI_HALF_SECOND - 1)
+        begin
+            counter <= 0;
+            twinkle <= ~ twinkle;
+        end
     end
 
 

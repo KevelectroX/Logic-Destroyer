@@ -4,7 +4,8 @@ module top
 (
     input clk, input_0, input_1, rst,
     output o_red, o_blue, o_green, vsync, hsync,
-    inout sda, scl
+    inout sda, scl,
+    output audio_out
 
 );
 
@@ -57,8 +58,10 @@ module top
 
     // <!-------- Lógica de Pulsación  --------->
     //  Dícese de la lógica de pulsación de un botón
-    wire i0 = r_input_0 & ~input_0;
-    wire i1 = r_input_1 & ~input_1;
+    wire clean_0;
+    wire clean_1;
+    wire i0 = r_input_0 & ~clean_0;
+    wire i1 = r_input_1 & ~clean_1;
     
 
 
@@ -74,6 +77,7 @@ module top
     wire [5:0] note;
     wire playing;
     reg audio_start;
+    reg music_start = 1;
     reg [2:0] sound;
 
 
@@ -100,9 +104,23 @@ module top
 		.i_Clk(clk),
 		.i_Enable(enable),
 		.i_Seed_DV(1'b0),
-		.i_Seed_Data(16'd0),
+		.i_Seed_Data(32'd0),
 		.o_LFSR_Data(LFSR_data)
 	);
+
+    // <!-------- Anti rebote  --------->
+    //  Evita rebotes indeseados de los botones, son 20ms maso
+    antibounce #(.CYCLES(CLKS_PER_SECOND / 50)) btn_0(
+        .clk(clk),
+        .in(input_0),
+        .out(clean_0)
+    );
+
+    antibounce #(.CYCLES(CLKS_PER_SECOND / 50)) btn_1(
+        .clk(clk),
+        .in(input_1),
+        .out(clean_1)
+    );
 
 
     // <!-------- Topologás "Virtuales"  --------->
@@ -161,24 +179,43 @@ module top
         .rst(rst),
         .note(note),
         .sda(sda),
-        .scl(scl)
+        .scl(scl),
+        .wave(audio_out)
     );
 
-    player #(.SEMI_CYCLES(CLKS_PER_SECOND/8)) player(
+    wire [5:0] note_music;
+    wire music_enable;
+    player #(.SEMI_CYCLES(CLKS_PER_SECOND/8), .SONG_CYCLES(CLKS_PER_SECOND*3/64)) music(
+        .clk(clk),
+        .rst(rst),
+        .start(music_start),
+        .enable(music_enable),
+        .sound(3'd0),
+        .note(note_music)
+    );
+
+    wire [5:0] note_effect;
+    wire playing_effect;
+    wire effect_enable;
+    player #(.SEMI_CYCLES(CLKS_PER_SECOND/8), .SONG_CYCLES(CLKS_PER_SECOND*3/56)) effects(
         .clk(clk),
         .rst(rst),
         .start(audio_start),
-        .enable(playing),
+        .enable(effect_enable),
         .sound(sound),
-        .note(note)
+        .note(note_effect),
+        .is_playing(playing_effect)
     );
+
+    assign note = (playing_effect) ? note_effect : note_music;
+    assign playing = (playing_effect) ? effect_enable : music_enable;
 
     
     
     // <!-------- Módulos de Video  --------->
     // Los módulos relacionados con el video
 
-    reg w_red, w_green, w_blue;
+    wire w_red, w_green, w_blue;
     vga_logic vga(
         .clk(clk),
         .i_red(w_red),
@@ -215,6 +252,7 @@ module top
     wire [8:0] tp1_item; 
     wire [10:0] tp1_text;
     topology_1_draw tp1_draw(
+        .clk(clk),
         .random_config(random_config),
         .inputs(inputs),
         .pos(pos),
@@ -222,14 +260,15 @@ module top
         .o1(tp1_o1),
         .hcount(hcount),
         .ycount(ycount),
-        .item(tp_1_item),
-        .text(tp_1_text)
+        .item(tp1_item),
+        .text(tp1_text)
     );
     
     // Topología 2
     wire [8:0] tp2_item; 
     wire [10:0] tp2_text;
     topology_2_draw tp2_draw(
+        .clk(clk),
         .random_config(random_config),
         .inputs(inputs),
         .pos(pos),
@@ -237,14 +276,15 @@ module top
         .o1(tp2_o1),
         .hcount(hcount),
         .ycount(ycount),
-        .item(tp_2_item),
-        .text(tp_2_text)
+        .item(tp2_item),
+        .text(tp2_text)
     );
 
     // Topología 3
     wire [8:0] tp3_item; 
     wire [10:0] tp3_text;
     topology_3_draw tp3_draw(
+        .clk(clk),
         .random_config(random_config),
         .inputs(inputs),
         .pos(pos),
@@ -252,14 +292,15 @@ module top
         .o1(tp3_o1),
         .hcount(hcount),
         .ycount(ycount),
-        .item(tp_3_item),
-        .text(tp_3_text)
+        .item(tp3_item),
+        .text(tp3_text)
     );
 
     // Topología 4
     wire [8:0] tp4_item; 
     wire [10:0] tp4_text;
     topology_4_draw tp4_draw(
+        .clk(clk),
         .random_config(random_config),
         .inputs(inputs),
         .pos(pos),
@@ -268,14 +309,15 @@ module top
         .o2(tp4_o2),
         .hcount(hcount),
         .ycount(ycount),
-        .item(tp_4_item),
-        .text(tp_4_text)
+        .item(tp4_item),
+        .text(tp4_text)
     );
 
     // Topología 5
     wire [8:0] tp5_item; 
     wire [10:0] tp5_text;
     topology_5_draw tp5_draw(
+        .clk(clk),
         .random_config(random_config),
         .inputs(inputs),
         .pos(pos),
@@ -285,8 +327,51 @@ module top
         .o3(tp5_o3),
         .hcount(hcount),
         .ycount(ycount),
-        .item(tp_5_item),
-        .text(tp_5_text)
+        .item(tp5_item),
+        .text(tp5_text)
+    );
+
+
+    // <!-------- Pantallas Visuales  --------->
+    // grafica las distintas pantallas del juego como ronda, inicio, etc.
+
+    wire [10:0] title_text;
+    wire [8:0] title_item;
+    title_draw title_draw_1(
+        .clk(clk),
+        .round(round),
+        .hcount(hcount),
+        .ycount(ycount),
+        .text(title_text),
+        .item(title_item),
+        .rst(rst)
+    );
+
+    wire [10:0] rules_text;
+    wire [8:0] rules_item;
+    rules_draw rules_draw1(
+        .clk(clk),
+        .hcount(hcount),
+        .ycount(ycount),
+        .item(rules_item),
+        .text(rules_text)
+    );
+
+    wire [10:0] round_text;
+    round_draw round_draw1(
+        .clk(clk),
+        .round(round),
+        .hcount(hcount),
+        .ycount(ycount),
+        .text(round_text)
+    );
+
+    wire [10:0] finish_text;
+    finish_draw finish_draw1(
+        .score(score),
+        .hcount(hcount),
+        .ycount(ycount),
+        .text(finish_text)
     );
 
 
@@ -297,39 +382,63 @@ module top
 
         if(round == 0 && (r_SM_Main == SHOW_TOPOLOGY || r_SM_Main == SHOW_CORRECTION))
         begin
-            item = tp_1_item;
-            text = tp_1_text;
+            item = tp1_item;
+            text = tp1_text;
         end
 
         else if(round == 1 && (r_SM_Main == SHOW_TOPOLOGY || r_SM_Main == SHOW_CORRECTION))
         begin
-            item = tp_2_item;
-            text = tp_2_text;
+            item = tp2_item;
+            text = tp2_text;
         end
 
         else if(round == 2 && (r_SM_Main == SHOW_TOPOLOGY || r_SM_Main == SHOW_CORRECTION))
         begin
-            item = tp_3_item;
-            text = tp_3_text;
+            item = tp3_item;
+            text = tp3_text;
         end
 
         else if(round == 3 && (r_SM_Main == SHOW_TOPOLOGY || r_SM_Main == SHOW_CORRECTION))
         begin
-            item = tp_4_item;
-            text = tp_4_text;
+            item = tp4_item;
+            text = tp4_text;
         end
 
         else if(round == 4 && (r_SM_Main == SHOW_TOPOLOGY || r_SM_Main == SHOW_CORRECTION))
         begin
-            item = tp_5_item;
-            text = tp_5_text;
+            item = tp5_item;
+            text = tp5_text;
+        end
+
+        else if(r_SM_Main == SHOW_ROUND)
+        begin
+            item = 0;
+            text = round_text;
+        end
+
+        else if(r_SM_Main == START)
+        begin
+            item = title_item;
+            text = title_text;
+        end
+
+
+        else if(r_SM_Main == FINAL_SCREEN)
+        begin
+            item = 0;
+            text = finish_text;
+        end
+
+        else if(r_SM_Main == SHOW_RULES)
+        begin
+            item = rules_item;
+            text = rules_text;
         end
 
         else
         begin
-            w_red = 0;
-            w_green = 0;
-            w_blue = 0;
+            item = 0;
+            text = 0;
         end
     end
 
@@ -340,14 +449,19 @@ module top
     always @(posedge clk) begin
         
         // Guarda entrada actual del botón para identificar un cambio
-        r_input_0 <= input_0;
-        r_input_1 <= input_1;
+        r_input_0 <= clean_0;
+        r_input_1 <= clean_1;
+
+        // Reincia el pulso de audio xD
+        audio_start <= 0;
+        music_start <= 0;
 
 
         // Lógica de Reset
         if(~rst)
         begin
             audio_start <= 0; 
+            music_start <= 1;
             r_SM_Main <= START;
             r_time_count <= 0;
             inputs <= 4'd0;
@@ -364,7 +478,7 @@ module top
             START : 
             begin
 
-                sound <= 3;
+                sound <= 0;
                 r_time_count <= 0;
                 round <= 0;
                 score <= 0;
@@ -395,12 +509,9 @@ module top
 
             SHOW_ROUND :
             begin
-                audio_start <= 0;
                 r_time_count <= r_time_count + 1;
                 inputs <= 4'd0;
                 pos <= 0;
-
-                //Lógica
 
                 if(r_time_count == ROUND_CYCLES)
                 begin
@@ -412,7 +523,6 @@ module top
 
             GENERATE_CONFIG : 
             begin
-                sound <= 0;
                 r_time_count <= r_time_count + 1;
                 random_config <= LFSR_data;
 
@@ -486,7 +596,9 @@ module top
 
             VERIFY :
             begin
-                score <= score + num_outputs - wrong[3] - wrong[2] - wrong[1] - wrong[0];
+                score <= score + num_outputs*(round+1) - wrong[3]*(round+1) 
+                        - wrong[2]*(round+1) - wrong[1]*(round+1) - wrong[0]*(round+1);
+                
 
                 if(|wrong)
                 begin
@@ -507,8 +619,7 @@ module top
 
                     else
                     begin
-                       round <= round + 1;
-                       r_SM_Main <= SHOW_ROUND; 
+                       r_SM_Main <= SHOW_CORRECTION; 
                     end
                 end
             end
@@ -544,6 +655,7 @@ module top
 
             FINAL_SCREEN :
             begin
+                music_start <= 0;
                 audio_start <= 0;
                 if(i1)                      
                 begin
@@ -552,8 +664,12 @@ module top
                     r_SM_Main <= SHOW_ROUND;
                 end
  
-                else if(i0)                 
+                else if(i0)
+                begin          
+                    music_start <= 1;     
                     r_SM_Main <= START;
+                end
+
             end
  
 

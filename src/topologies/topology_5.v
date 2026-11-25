@@ -18,7 +18,7 @@ module topology_5(
         .i2(i2),
         .rise(rise),
         .q(random_config[9]),
-        .circuit({1'b0, random_config[8:6]}),
+        .circuit(random_config[8:6]),
         .o(w_g1)
     );
 
@@ -35,7 +35,7 @@ module topology_5(
         .i2(i5),
         .rise(rise),
         .q(random_config[16]),
-        .circuit({1'b0, random_config[15:13]}),
+        .circuit(random_config[15:13]),
         .o(w_g3)
     );
 
@@ -44,7 +44,7 @@ module topology_5(
         .i2(w_g2),
         .rise(rise),
         .q(random_config[20]),
-        .circuit({1'b0, random_config[19:17]}),
+        .circuit(random_config[19:17]),
         .o(o1)
     );
 
@@ -53,7 +53,7 @@ module topology_5(
         .i2(w_g3),
         .rise(rise),
         .q(random_config[24]),
-        .circuit({1'b0, random_config[23:21]}),
+        .circuit(random_config[23:21]),
         .o(w_g5)
     );
 
@@ -70,7 +70,7 @@ module topology_5(
         .i2(w_g1),
         .rise(rise),
         .q(random_config[31]),
-        .circuit({1'b0, random_config[30:28]}),
+        .circuit(random_config[30:28]),
         .o(o3)
     );
 
