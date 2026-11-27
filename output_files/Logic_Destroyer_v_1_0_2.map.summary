@@ -1,0 +1,14 @@
+Analysis & Synthesis Status : Successful - Fri Nov 27 06:04:55 2026
+Quartus Prime Version : 25.1std.0 Build 1129 10/21/2025 SC Lite Edition
+Revision Name : Logic_Destroyer_v_1_0_2
+Top-level Entity Name : top
+Family : Cyclone IV E
+Total logic elements : 4,048
+    Total combinational functions : 3,979
+    Dedicated logic registers : 608
+Total registers : 608
+Total pins : 14
+Total virtual pins : 0
+Total memory bits : 204,800
+Embedded Multiplier 9-bit elements : 0
+Total PLLs : 0

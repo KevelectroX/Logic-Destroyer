@@ -55,6 +55,11 @@ module title_draw(
         if(gx == 12 && gy == 6) text = {1'b1, 7'd5 + 7'd26, RGB};       // e
         if(gx == 13 && gy == 6) text = {1'b1, 7'd18 + 7'd26, RGB};      // r
 
+        
+        // Créditos: glifos 79-84 (primera línea) y 85-90 (segunda), en grande
+        if(gx >= 7 && gx <= 12 && gy == 13) text = {1'b1, 7'd79 + (gx - 5'd7), WHITE};
+        if(gx >= 7 && gx <= 12 && gy == 14) text = {1'b1, 7'd85 + (gx - 5'd7), WHITE};
+
         // Presiona 1 o 0
         if(twinkle && rst)
         begin

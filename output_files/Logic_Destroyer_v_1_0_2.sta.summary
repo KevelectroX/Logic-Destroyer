@@ -1,0 +1,77 @@
+------------------------------------------------------------
+Timing Analyzer Summary
+------------------------------------------------------------
+
+Type  : Slow 1200mV 85C Model Setup 'clk'
+Slack : -17.035
+TNS   : -3606.638
+
+Type  : Slow 1200mV 85C Model Setup 'audio:audio|i2c:protocol|i2c_clk'
+Slack : -13.344
+TNS   : -44.691
+
+Type  : Slow 1200mV 85C Model Hold 'clk'
+Slack : 0.432
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Hold 'audio:audio|i2c:protocol|i2c_clk'
+Slack : 0.453
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'clk'
+Slack : -3.201
+TNS   : -976.133
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'audio:audio|i2c:protocol|i2c_clk'
+Slack : -1.487
+TNS   : -23.792
+
+Type  : Slow 1200mV 0C Model Setup 'clk'
+Slack : -15.656
+TNS   : -3321.052
+
+Type  : Slow 1200mV 0C Model Setup 'audio:audio|i2c:protocol|i2c_clk'
+Slack : -12.424
+TNS   : -40.931
+
+Type  : Slow 1200mV 0C Model Hold 'clk'
+Slack : 0.382
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Hold 'audio:audio|i2c:protocol|i2c_clk'
+Slack : 0.401
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'clk'
+Slack : -3.201
+TNS   : -976.133
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'audio:audio|i2c:protocol|i2c_clk'
+Slack : -1.487
+TNS   : -23.792
+
+Type  : Fast 1200mV 0C Model Setup 'clk'
+Slack : -6.759
+TNS   : -1210.675
+
+Type  : Fast 1200mV 0C Model Setup 'audio:audio|i2c:protocol|i2c_clk'
+Slack : -5.041
+TNS   : -11.680
+
+Type  : Fast 1200mV 0C Model Hold 'clk'
+Slack : 0.161
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Hold 'audio:audio|i2c:protocol|i2c_clk'
+Slack : 0.184
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'clk'
+Slack : -3.000
+TNS   : -666.966
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'audio:audio|i2c:protocol|i2c_clk'
+Slack : -1.000
+TNS   : -16.000
+
+------------------------------------------------------------

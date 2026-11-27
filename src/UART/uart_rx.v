@@ -1,10 +1,9 @@
-
 // CLK = 50_000_000 Hz
-// baud UART = 115200
-// CLKS_PER_BIT = CLK/baud = 435
+// baud UART = 9600
+// CLKS_PER_BIT = CLK/baud = 5208
 
 module UART_RX
-#(parameter CLK_PER_BIT = 435)
+#(parameter CLK_PER_BIT = 5208)
 (
 	input i_clock,
 	input i_RX_Serial,
@@ -12,31 +11,42 @@ module UART_RX
 	output [7:0] o_RX_Byte
 );
 
-	parameter IDLE = 3'b000;
-	parameter RX_START_BIT = 3'b001;
-	parameter RX_DATA_BITS = 3'b010;
-	parameter RX_STOP_BIT = 3'b011;
-	parameter CLEANUP = 3'b100;
+	localparam IDLE = 3'b000;
+	localparam RX_START_BIT = 3'b001;
+	localparam RX_DATA_BITS = 3'b010;
+	localparam RX_STOP_BIT = 3'b011;
+	localparam CLEANUP = 3'b100;
 
 
-	reg [7:0] r_Clock_Count = 0;
+	reg [12:0] r_Clock_Count = 0;
 	reg [2:0] r_Bit_Index = 0;
 	reg [7:0] r_RX_Byte = 0;
 	reg 		 r_RX_DV = 0;
 	reg [2:0] r_SM_Main = 0;
+	reg r_RX_Data_R = 1'b1;
+	reg r_RX_Data = 1'b1;
+
+	assign o_RX_DV = r_RX_DV;
+	assign o_RX_Byte = r_RX_Byte;
+
+	always @(posedge i_clock)
+	begin
+		r_RX_Data_R <= i_RX_Serial;
+		r_RX_Data <= r_RX_Data_R;
+	end
 
 // Controlar la maquina de estados RX
-	always @(posedge i_Clock)
+	always @(posedge i_clock)
 	begin
 		
 		case(r_SM_Main)
 			IDLE : 
 			begin
-				r__RX_DV <= 1'b0;
+				r_RX_DV <= 1'b0;
 				r_Clock_Count <= 0;
 				r_Bit_Index <= 0;
 				
-				if (i_RX_Serial == 1'b0)
+				if (r_RX_Data == 1'b0)
 					r_SM_Main <= RX_START_BIT;
 				else
 					r_SM_Main <= IDLE;
@@ -47,10 +57,10 @@ module UART_RX
 		// Comprobar si el bit de la mitad del incio sigue bajo
 		RX_START_BIT : 
 			begin 
-				if (r_Clock_Count == (CLKS_PER_BIT-1)/2)
+				if (r_Clock_Count == (CLK_PER_BIT-1)/2)
 				begin
 				
-					if (i_RX_Serial == 1'b0)
+					if (r_RX_Data == 1'b0)
 					begin
 						r_Clock_Count <= 0;	// Resetear el contador
 						r_SM_Main 	  <= RX_DATA_BITS;
@@ -80,7 +90,7 @@ module UART_RX
 				else
 				begin
 					r_Clock_Count <= 0;
-					r_RX_Byte[r_Bit_Index] <= i_RX_Serial;
+					r_RX_Byte[r_Bit_Index] <= r_RX_Data;
 					
 					
 					// Revisa si se recibieron los 8 bits

@@ -1,6 +1,7 @@
 module player 
 #(parameter SEMI_CYCLES = 6_250_000,    // Unidad de tiempo semicorchea a 120 bpm
-  parameter SONG_CYCLES = 6_250_000)    // Unidad de tiempo de la canción
+  parameter SONG_CYCLES = 6_250_000,    // Unidad de tiempo de la canción
+  parameter FILE = "song.txt")
 (
     input clk, rst,
     input start,
@@ -32,7 +33,7 @@ reg tie = 0;                // Ligadura: el paso se une al siguiente sin silenci
 reg [11:0] song [0:4095];
 reg [11:0] song_row;
 
-initial $readmemh("song.txt", song);
+initial $readmemh(FILE, song);
 
 assign is_playing = playing;
 

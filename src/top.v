@@ -3,8 +3,10 @@ module top
   parameter CLKS_PER_SECOND = 50_000_000)
 (
     input clk, input_0, input_1, rst,
+    input bt_rx,
     output o_red, o_blue, o_green, vsync, hsync,
     inout sda, scl,
+    output bt_tx,
     output audio_out
 
 );
@@ -41,6 +43,7 @@ module top
     reg [7:0] score = 0;            // Registro de puntaje
     reg r_input_0 = 0;              // Registro de ingreso de un 0
     reg r_input_1 = 0;              // Registro de ingreso de un 1
+    reg previous_final = 0;
 
 
 
@@ -60,8 +63,10 @@ module top
     //  Dícese de la lógica de pulsación de un botón
     wire clean_0;
     wire clean_1;
-    wire i0 = r_input_0 & ~clean_0;
-    wire i1 = r_input_1 & ~clean_1;
+    wire i0_b;
+    wire i1_b;
+    wire i0 = (r_input_0 & ~clean_0) || i0_b;
+    wire i1 = (r_input_1 & ~clean_1) || i1_b;
     
 
 
@@ -86,6 +91,17 @@ module top
     //  Dícese de los registros y cables relacionados al video
     wire [9:0] hcount, ycount;
     reg show_response = 0;
+
+    // <!-------- Variables UART  --------->
+    //  Dícese de los registros y cables relacionados al uart
+    reg [7:0] uart_counter = 0;     // Byte del mensaje que se está enviando
+    reg send_score = 0;             // Pulso para empezar a enviar el puntaje
+    reg sending = 0;                // Hay un mensaje en curso
+    reg [7:0] score_copy = 0;       // Puntaje guardado al empezar el envío
+    reg tx_dv = 0;
+    reg [7:0] tx_byte = 0;
+    wire tx_active;
+    wire tx_done;
 
 
     // Circuitos y conexiones para la primera topología, fue a mano xD
@@ -173,25 +189,26 @@ module top
 
     // <!-------- Módulos de Audio  --------->
     // Los módulos relacionados con el audio
-    audio audio(
-        .clk(clk),
-        .enable(playing),
-        .rst(rst),
-        .note(note),
-        .sda(sda),
-        .scl(scl),
-        .wave(audio_out)
-    );
-
     wire [5:0] note_music;
     wire music_enable;
-    player #(.SEMI_CYCLES(CLKS_PER_SECOND/8), .SONG_CYCLES(CLKS_PER_SECOND*3/64)) music(
+    player #(.SEMI_CYCLES(CLKS_PER_SECOND/8), .SONG_CYCLES(CLKS_PER_SECOND*5/32)) music(
         .clk(clk),
         .rst(rst),
         .start(music_start),
         .enable(music_enable),
         .sound(3'd0),
         .note(note_music)
+    );
+
+    wire [5:0] note_bass;
+    wire bass_enable;
+    player #(.SEMI_CYCLES(CLKS_PER_SECOND/8), .SONG_CYCLES(CLKS_PER_SECOND*5/32), .FILE("song_bass.txt")) bass(
+        .clk(clk),
+        .rst(rst),
+        .start(music_start),
+        .enable(bass_enable),
+        .sound(3'd0),
+        .note(note_bass)
     );
 
     wire [5:0] note_effect;
@@ -209,6 +226,19 @@ module top
 
     assign note = (playing_effect) ? note_effect : note_music;
     assign playing = (playing_effect) ? effect_enable : music_enable;
+
+    audio audio(
+        .clk(clk),
+        .enable(playing),
+        .rst(rst),
+        .note(note),
+        .sda(sda),
+        .scl(scl),
+        .wave(audio_out),
+        .note_2(note_bass),
+        .enable_2(bass_enable)
+    );
+
 
     
     
@@ -244,7 +274,75 @@ module top
         .o_blue(w_blue)
     );
 
-    
+    // <!-------- Módulos de Bluetooth --------->
+    // Solo intancia el uart_rx para descrestar
+    wire o_rx_dv;
+    wire [7:0] o_rx_byte;
+
+    uart_rx uart(
+        .i_clock(clk),
+        .i_RX_Serial(bt_rx),
+        .o_RX_DV(o_rx_dv),
+        .o_RX_Byte(o_rx_byte)
+    );
+
+    assign i0_b = o_rx_dv && (o_rx_byte == 8'h30);
+    assign i1_b = o_rx_dv && (o_rx_byte == 8'h31);
+
+    uart_tx uart_t(
+        .i_Clock(clk),
+        .i_Tx_DV(tx_dv),
+        .i_Tx_Byte(tx_byte),
+        .o_Tx_Active(tx_active),
+        .o_Tx_Serial(bt_tx),
+        .o_Tx_Done(tx_done)
+    );
+
+    // Manda "Puntaje: XX" y un salto de línea, un byte a la vez.
+    // tx_dv se mantiene en 1 hasta que el transmisor lo toma (sube tx_active)
+    always @(posedge clk)
+    begin
+        if(send_score)
+        begin
+            sending <= 1;
+            uart_counter <= 0;
+            score_copy <= score;
+        end
+
+        else if(sending)
+        begin
+            if(~tx_dv && ~tx_active)
+            begin
+                tx_dv <= 1;
+
+                case(uart_counter)
+                    8'd0 : tx_byte <= "P";
+                    8'd1 : tx_byte <= "u";
+                    8'd2 : tx_byte <= "n";
+                    8'd3 : tx_byte <= "t";
+                    8'd4 : tx_byte <= "a";
+                    8'd5 : tx_byte <= "j";
+                    8'd6 : tx_byte <= "e";
+                    8'd7 : tx_byte <= ":";
+                    8'd8 : tx_byte <= " ";
+                    8'd9 : tx_byte <= 8'h30 + score_copy / 10;     // Decenas en ASCII
+                    8'd10 : tx_byte <= 8'h30 + score_copy % 10;    // Unidades en ASCII
+                    default : tx_byte <= 8'h0A;                    // Salto de línea
+                endcase
+            end
+
+            else if(tx_dv && tx_active)
+            begin
+                tx_dv <= 0;
+
+                if(uart_counter == 8'd11)
+                    sending <= 0;
+                else
+                    uart_counter <= uart_counter + 1;
+            end
+        end
+    end
+
 
     // <!-------- Topologías Visuales  --------->
     // grafica la topología en la pantalla, o bueno, le dice al módulo que graficar
@@ -455,6 +553,7 @@ module top
         // Reincia el pulso de audio xD
         audio_start <= 0;
         music_start <= 0;
+        send_score <= 0;
 
 
         // Lógica de Reset
@@ -469,6 +568,7 @@ module top
             round <= 0;
             score <= 0;
             show_response <= 0;
+            previous_final <= 0;
         end
 
 
@@ -477,7 +577,8 @@ module top
 
             START : 
             begin
-
+                
+                previous_final <= 0;
                 sound <= 0;
                 r_time_count <= 0;
                 round <= 0;
@@ -509,6 +610,7 @@ module top
 
             SHOW_ROUND :
             begin
+                previous_final <= 0;
                 r_time_count <= r_time_count + 1;
                 inputs <= 4'd0;
                 pos <= 0;
@@ -655,6 +757,13 @@ module top
 
             FINAL_SCREEN :
             begin
+
+                if(~previous_final)
+                begin
+                    previous_final <= 1;
+                    send_score <= 1;
+                end
+
                 music_start <= 0;
                 audio_start <= 0;
                 if(i1)                      
